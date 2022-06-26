@@ -7,7 +7,9 @@ services:
       dockerfile: Dockerfile.dev
     tty: true
     stdin_open: true
-    volumes:
-      - ./src:/usr/app/src
     ports:
       - 8080:8080
+    volumes:
+      - type: bind
+        source: "./src"
+        target: "/go/app/src"
