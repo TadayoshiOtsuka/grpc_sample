@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  grpc_server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./src:/usr/app/src
+    ports:
+      - 8080:8080
