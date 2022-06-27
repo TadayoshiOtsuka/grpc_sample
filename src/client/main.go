@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	hellopb "github.com/TadayoshiOtsuka/grpc_sample/src/pkg/grpc"
+	pb "github.com/TadayoshiOtsuka/grpc_sample/src/pkg/grpc"
 )
 
 func main() {
@@ -21,7 +21,11 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	address := "localhost:8080"
-	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(
+		address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(),
+	)
 	if err != nil {
 		log.Fatal("connection failed")
 		return
@@ -29,7 +33,7 @@ func main() {
 
 	defer conn.Close()
 
-	client := hellopb.NewGreetingServiceClient(conn)
+	client := pb.NewGreetingServiceClient(conn)
 
 	for {
 		fmt.Println("1: send unary req")
@@ -38,16 +42,16 @@ func main() {
 		fmt.Println("4: send bi stream req")
 		fmt.Println("5: exit")
 		fmt.Print("please Enter >")
-
 		scanner.Scan()
 		in := scanner.Text()
+
 		switch in {
 		case "1":
 			Hello(client, scanner)
-
 		case "2":
 			HelloServerStream(client, scanner)
-
+		case "3":
+			HelloClientStream(client, scanner)
 		case "5":
 			fmt.Println("bye.")
 			goto M
@@ -56,12 +60,12 @@ func main() {
 M:
 }
 
-func Hello(client hellopb.GreetingServiceClient, scanner *bufio.Scanner) {
+func Hello(client pb.GreetingServiceClient, scanner *bufio.Scanner) {
 	fmt.Println("Please Enter Your Name")
 	scanner.Scan()
 	name := scanner.Text()
 
-	req := &hellopb.HelloRequest{
+	req := &pb.HelloRequest{
 		Name: name,
 	}
 
@@ -70,15 +74,15 @@ func Hello(client hellopb.GreetingServiceClient, scanner *bufio.Scanner) {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(res.GetMessage())
 
+	fmt.Println(res.GetMessage())
 }
 
-func HelloServerStream(client hellopb.GreetingServiceClient, scanner *bufio.Scanner) {
+func HelloServerStream(client pb.GreetingServiceClient, scanner *bufio.Scanner) {
 	fmt.Println("Please Enter Your Name")
 	scanner.Scan()
 	name := scanner.Text()
-	req := &hellopb.HelloRequest{
+	req := &pb.HelloRequest{
 		Name: name,
 	}
 
@@ -97,8 +101,40 @@ func HelloServerStream(client hellopb.GreetingServiceClient, scanner *bufio.Scan
 
 		if err != nil {
 			fmt.Println(err)
+			break
 		}
 
 		fmt.Println(res)
 	}
+}
+
+func HelloClientStream(client pb.GreetingServiceClient, scanner *bufio.Scanner) {
+	stream, err := client.HelloClientStream(context.Background())
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	sendCount := 5
+	fmt.Printf("Please enter %d names.\n", sendCount)
+	for i := 0; i < sendCount; i++ {
+		scanner.Scan()
+		name := scanner.Text()
+
+		if err := stream.Send(&pb.HelloRequest{
+			Name: name,
+		}); err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Printf("stream send, %s\n", name)
+	}
+
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(res.GetMessage())
 }
