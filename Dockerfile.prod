@@ -30,4 +30,4 @@ COPY --from=Builder /go/app/bin/main /app/main
 
 EXPOSE 8080
 USER nonroot:nonroot
-ENTRYPOINT ["/app/main"]
+CMD ["/app/main"]
