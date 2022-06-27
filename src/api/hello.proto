@@ -4,7 +4,10 @@ option go_package = "pkg/grpc";
 
 package greet;
 
-service GreetingService { rpc Hello(HelloRequest) returns (HelloResponse); }
+service GreetingService {
+  rpc Hello(HelloRequest) returns (HelloResponse);
+  rpc HelloServerStream(HelloRequest) returns (stream HelloResponse);
+}
 
 message HelloRequest { string name = 1; }
 

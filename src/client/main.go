@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -30,8 +32,11 @@ func main() {
 	client := hellopb.NewGreetingServiceClient(conn)
 
 	for {
-		fmt.Println("1: send req")
-		fmt.Println("2: exit")
+		fmt.Println("1: send unary req")
+		fmt.Println("2: send server stream req")
+		fmt.Println("3: send client stream req")
+		fmt.Println("4: send bi stream req")
+		fmt.Println("5: exit")
 		fmt.Print("please Enter >")
 
 		scanner.Scan()
@@ -41,6 +46,9 @@ func main() {
 			Hello(client, scanner)
 
 		case "2":
+			HelloServerStream(client, scanner)
+
+		case "5":
 			fmt.Println("bye.")
 			goto M
 		}
@@ -64,4 +72,33 @@ func Hello(client hellopb.GreetingServiceClient, scanner *bufio.Scanner) {
 	}
 	fmt.Println(res.GetMessage())
 
+}
+
+func HelloServerStream(client hellopb.GreetingServiceClient, scanner *bufio.Scanner) {
+	fmt.Println("Please Enter Your Name")
+	scanner.Scan()
+	name := scanner.Text()
+	req := &hellopb.HelloRequest{
+		Name: name,
+	}
+
+	stream, err := client.HelloServerStream(context.Background(), req)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for {
+		res, err := stream.Recv()
+		if errors.Is(err, io.EOF) {
+			fmt.Println("all res already received")
+			break
+		}
+
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		fmt.Println(res)
+	}
 }

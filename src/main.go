@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"time"
 
 	hellopb "github.com/TadayoshiOtsuka/grpc_sample/src/pkg/grpc"
 
@@ -42,12 +43,29 @@ type MyServer struct {
 	hellopb.UnimplementedGreetingServiceServer
 }
 
+func NewMyServer() *MyServer {
+	return &MyServer{}
+}
+
 func (s *MyServer) Hello(ctx context.Context, req *hellopb.HelloRequest) (*hellopb.HelloResponse, error) {
 	return &hellopb.HelloResponse{
 		Message: fmt.Sprintf("Hello, %s!", req.GetName()),
 	}, nil
 }
 
-func NewMyServer() *MyServer {
-	return &MyServer{}
+func (s *MyServer) HelloServerStream(req *hellopb.HelloRequest, stream hellopb.GreetingService_HelloServerStreamServer) error {
+	resCount := 5
+
+	for i := 0; i < resCount; i++ {
+		msg := fmt.Sprintf("[%d] Hello, %s!", i, req.GetName())
+
+		if err := stream.Send(
+			&hellopb.HelloResponse{Message: msg},
+		); err != nil {
+			return err
+		}
+		time.Sleep(time.Second * 1)
+	}
+
+	return nil
 }
